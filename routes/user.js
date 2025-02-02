@@ -43,15 +43,14 @@ router.post("/signup", async function (req, res) {
 
     var token = jwt.sign(
       {
-        UserName: userName,
-        firstName: firstName,
-        lastName: lastName,
+        userId: newUser._id,
       },
       JwtPass
     );
     console.log(token);
     res.json({
-      msg: token,
+      msg: "User Created Successfully ",
+      token: token,
     });
   } catch (err) {
     res.json({
