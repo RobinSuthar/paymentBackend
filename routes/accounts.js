@@ -45,13 +45,13 @@ router.post("/transfer", authMiddleware, async function (req, res) {
   }
 
   try {
-    AccountTo.updateOne({
+    await AccountTo.updateOne({
       $inc: { balance: -amount },
-    });
+    }).session(session);
 
-    AccountFrom.updateOne({
+    await AccountFrom.updateOne({
       $inc: { balance: amount },
-    });
+    }).session(session);
     res.json({
       msg: "Money Transfered Successfully",
     });
