@@ -85,34 +85,21 @@ router.post("/signin", async function (req, res) {
 router.put("/", authMiddleware, async function (req, res) {
   const UpdatedUser = req.body;
 
-  const authHeader = req.headers.authorization;
+  const result = await User.updateOne({ id: req.userId }, UpdatedUser);
 
-  const token = authHeader.split(" ")[1];
-  const decoded = jwt.verify(token, JWT_SECRET);
-
-  try {
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: decoded.userId },
-      UpdatedUser
-    );
-
-    if (!pdatedUser) {
-      return res.json({ msg: "User Did not Updated" });
-    }
-
-    res.json({ msg: "User Updated Successfully" });
-  } catch (err) {
-    res.json({
-      msg: err,
-    });
-  }
+  res.json({
+    msg: "Updated Successfully",
+  });
 });
 
 router.put("/bulk", authMiddleware, async function (req, res) {
-  const queryParam = req.query.filter;
+  const queryParam = req.query.filter || "";
   try {
     const result = User.find({
-      $or: [{ firstName: queryParam }, { lastName: queryParam }],
+      $or: [
+        { firstName: { $regex: queryParam } },
+        { lastName: { $regex: queryParam } },
+      ],
     });
 
     if (!result) {
@@ -122,7 +109,12 @@ router.put("/bulk", authMiddleware, async function (req, res) {
     }
 
     res.json({
-      result,
+      user: (await result).map((user) => ({
+        username: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        _id: user._id,
+      })),
     });
   } catch (err) {
     res.json({
