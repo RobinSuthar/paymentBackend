@@ -1,6 +1,6 @@
 import express from "express";
 import userSchema from "../types/type.js";
-import User from "../db.js";
+import { User, Transactions } from "../db.js";
 import jwt from "jsonwebtoken";
 import JwtPass from "../config.js";
 import authMiddleware from "../middleware.js";
