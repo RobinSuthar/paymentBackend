@@ -11,6 +11,6 @@ app.use(bodyParser.json());
 
 app.use("/api/v1", mainRouter);
 
-app.listen(3001, () => {
+app.listen(3002, () => {
   console.log("Backend Server Is Up and Running");
 });

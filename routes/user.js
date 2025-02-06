@@ -7,6 +7,7 @@ import authMiddleware from "../middleware.js";
 const router = express.Router();
 
 router.post("/signup", async function (req, res) {
+  console.log("sadas", req.body);
   const user = req.body;
   console.log(user);
   const result = userSchema.safeParse(user);
@@ -61,9 +62,15 @@ router.post("/signup", async function (req, res) {
   }
 });
 
+router.get("/", (req, res) => {
+  res.json({
+    msg: "Wokring",
+  });
+});
+
 router.post("/signin", async function (req, res) {
   const { username, password } = req.body;
-
+  console.log(username, password);
   try {
     const query = await User.findOne({ userName: username });
     console.log(query);
@@ -99,24 +106,21 @@ router.put("/", authMiddleware, async function (req, res) {
   });
 });
 
-router.put("/bulk", authMiddleware, async function (req, res) {
+router.get("/bulk", async function (req, res) {
+  console.log("Asas");
   const queryParam = req.query.filter || "";
+  console.log(queryParam);
+  console.log(req.body);
   try {
-    const result = User.find({
+    const result = await User.find({
       $or: [
         { firstName: { $regex: queryParam } },
         { lastName: { $regex: queryParam } },
       ],
     });
 
-    if (!result) {
-      res.json({
-        msg: "There is not User under That Name",
-      });
-    }
-
     res.json({
-      user: (await result).map((user) => ({
+      user: result.map((user) => ({
         username: user.userName,
         firstName: user.firstName,
         lastName: user.lastName,

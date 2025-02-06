@@ -1,68 +1,65 @@
 import express from "express";
 import authMiddleware from "../middleware.js";
 import { Transactions } from "../db.js";
+import mongoose from "mongoose";
 const router = express.Router();
 
 router.get("/balance", authMiddleware, async function (req, res) {
   const result = await Transactions.findOne({
     userId: req.userId,
   });
+  console.log(result);
   res.json({
     msg: result.balance,
   });
 });
 
 router.post("/transfer", authMiddleware, async function (req, res) {
-  const userId = req.userId;
-  const { accountTo, amount } = req.body;
+  console.log("Here");
+  const session = await mongoose.startSession();
 
-  const session = Transactions.startSession();
-
-  (await session).startTransaction();
-  const AccountTo = await Transactions.findOne({
+  session.startTransaction();
+  const { amount, to } = req.body;
+  console.log(amount, to);
+  const account = await Transactions.findOne({
     userId: req.userId,
+  }).session(session);
+
+  if (account.balance < amount) {
+    await session.abortTransaction();
+    return res.json({
+      msg: "Insuccificient Funds",
+    });
+  }
+
+  const toAccount = await Transactions.findOne({
+    userId: to,
+  }).session(session);
+
+  if (!toAccount) {
+    await session.abortTransaction();
+    return res.json({
+      msg: "Invalid Acoount",
+    });
+  }
+
+  await Transactions.updateOne(
+    {
+      userId: req.userId,
+    },
+    { $inc: { balance: -amount } }
+  ).session(session);
+  await Transactions.updateOne(
+    {
+      userId: to,
+    },
+    { $inc: { balance: amount } }
+  ).session(session);
+
+  await session.commitTransaction();
+  res.json({
+    msg: "Transfer Successfull",
   });
-
-  if (!AccountTo.userId) {
-    (await session).abortTransaction();
-    res.json({
-      msg: "There is no Account, Please Check Again",
-    });
-
-    return;
-  }
-
-  const AccountFrom = await Transactions.findOne({
-    userId: req.userId,
-  });
-
-  if (AccountFrom.balance < amount) {
-    res.status(400).json({
-      msg: "Insufficient Funds",
-    });
-
-    return;
-  }
-
-  try {
-    await AccountTo.updateOne({
-      $inc: { balance: -amount },
-    }).session(session);
-
-    await AccountFrom.updateOne({
-      $inc: { balance: amount },
-    }).session(session);
-    res.json({
-      msg: "Money Transfered Successfully",
-    });
-
-    (await session).commitTransaction();
-    return;
-  } catch (err) {
-    res.json({
-      msg: err,
-    });
-  }
 });
 
 export default router;
